@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/LiptonB/mux"
 )
@@ -28,11 +29,12 @@ func ReadRecords(r io.ReadCloser, out []chan *mux.Record) {
 	}
 }
 
-func WriteStream(c chan *mux.Record, w io.WriteCloser) {
+func WriteStream(c chan *mux.Record, w io.WriteCloser, wg *sync.WaitGroup) {
 	for rec := range c {
 		w.Write(rec.Data)
 	}
 	w.Close()
+	wg.Done()
 }
 
 func main() {
@@ -47,6 +49,8 @@ func main() {
 	}
 
 	cs := make([]chan *mux.Record, flag.NArg())
+	var wg sync.WaitGroup
+	wg.Add(flag.NArg())
 	for i := range cs {
 		cs[i] = make(chan *mux.Record, BUFSIZE)
 	}
@@ -57,8 +61,9 @@ func main() {
 			log.Printf("Unable to open %s: %s", file, err)
 			continue
 		}
-		go WriteStream(cs[index], file)
+		go WriteStream(cs[index], file, &wg)
 	}
 
 	ReadRecords(os.Stdin, cs)
+	wg.Wait()
 }

@@ -1,6 +1,9 @@
 package mux
 
-import "io"
+import (
+	"bufio"
+	"errors"
+)
 
 type Record struct {
 	Index byte
@@ -15,8 +18,26 @@ func (r *Record) ToBytes() []byte {
 	return out
 }
 
-func RecordFromReader(r io.ByteReader) (*Record, error) {
-	rec := &Record{}
+func RecordFromReader(r *bufio.Reader) (*Record, error) {
+	index, err := r.ReadByte()
+	if err != nil {
+		return nil, err
+	}
 
+	length, err := r.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, length)
+	n, err := r.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	if n != int(length) {
+		return nil, errors.New("Not enough bytes read")
+	}
+
+	rec := &Record{index, buf}
 	return rec, nil
 }
