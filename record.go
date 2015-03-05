@@ -3,6 +3,7 @@ package mux
 import (
 	"bufio"
 	"errors"
+	"io"
 )
 
 type Record struct {
@@ -23,19 +24,28 @@ func RecordFromReader(r *bufio.Reader) (*Record, error) {
 	if err != nil {
 		return nil, err
 	}
+	// log.Printf("Found index: %d", index)
 
 	length, err := r.ReadByte()
 	if err != nil {
 		return nil, err
 	}
+	// log.Printf("Found length: %d", length)
 
+	var left int = int(length)
 	buf := make([]byte, length)
-	n, err := r.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	if n != int(length) {
-		return nil, errors.New("Not enough bytes read")
+	bufleft := buf
+
+	for left > 0 {
+		n, err := r.Read(bufleft)
+		if err == io.EOF {
+			return nil, errors.New("Unexpected EOF")
+		} else if err != nil {
+			return nil, err
+		}
+		left -= n
+		bufleft = bufleft[n:]
+		// log.Printf("Read %d bytes into buffer", n)
 	}
 
 	rec := &Record{index, buf}
