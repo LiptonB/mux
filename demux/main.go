@@ -18,8 +18,10 @@ func ReadRecords(r io.ReadCloser, out []chan *mux.Record) {
 
 	for {
 		rec, err := mux.RecordFromReader(br)
-		if err != nil {
+		if err == io.EOF {
 			break
+		} else if err != nil {
+			panic(err)
 		}
 		out[rec.Index] <- rec
 	}

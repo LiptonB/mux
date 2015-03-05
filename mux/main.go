@@ -14,19 +14,21 @@ const BUFSIZE = 100
 const RECORDSIZE = 255
 
 func ReadToRecords(index byte, r io.ReadCloser, c chan *mux.Record, wg *sync.WaitGroup) {
-	buf := make([]byte, RECORDSIZE)
-
 	for {
+		buf := make([]byte, RECORDSIZE)
 		n, err := r.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Print(err)
 			continue
 		}
-		if err == io.EOF {
-			break
-		}
 		if n == 0 {
-			continue
+			if err == io.EOF {
+				//log.Printf("EOF reached")
+				break
+			} else {
+				log.Printf("Non-EOF empty read")
+				continue
+			}
 		}
 
 		rec := &mux.Record{index, buf[:n]}
@@ -38,6 +40,7 @@ func ReadToRecords(index byte, r io.ReadCloser, c chan *mux.Record, wg *sync.Wai
 
 func OutputRecords(c chan *mux.Record, w io.WriteCloser) {
 	for r := range c {
+		//log.Printf("%d bytes for %d", len(r.Data), r.Index)
 		w.Write(r.ToBytes())
 	}
 	w.Close()
