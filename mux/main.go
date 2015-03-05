@@ -6,25 +6,14 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/LiptonB/mux"
 )
 
 const BUFSIZE = 100
 const RECORDSIZE = 255
 
-type Record struct {
-	Index byte
-	Data  []byte
-}
-
-func (r *Record) ToBytes() []byte {
-	out := make([]byte, 2, len(r.Data)+2)
-	out[0] = r.Index
-	out[1] = byte(len(r.Data))
-	out = append(out, r.Data...)
-	return out
-}
-
-func ReadToRecords(index byte, r io.ReadCloser, c chan Record, wg *sync.WaitGroup) {
+func ReadToRecords(index byte, r io.ReadCloser, c chan *mux.Record, wg *sync.WaitGroup) {
 	buf := make([]byte, RECORDSIZE)
 
 	for {
@@ -40,14 +29,14 @@ func ReadToRecords(index byte, r io.ReadCloser, c chan Record, wg *sync.WaitGrou
 			continue
 		}
 
-		rec := Record{index, buf[:n]}
+		rec := &mux.Record{index, buf[:n]}
 		c <- rec
 	}
 	wg.Done()
 	r.Close()
 }
 
-func OutputRecords(c chan Record, w io.WriteCloser) {
+func OutputRecords(c chan *mux.Record, w io.WriteCloser) {
 	for r := range c {
 		w.Write(r.ToBytes())
 	}
@@ -65,7 +54,7 @@ func main() {
 		return
 	}
 
-	c := make(chan Record, BUFSIZE)
+	c := make(chan *mux.Record, BUFSIZE)
 	var wg sync.WaitGroup
 
 	for index, filename := range flag.Args() {
