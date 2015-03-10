@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package mux;
+
+message Record {
+  optional uint32 index = 1;
+  optional bytes data = 2;
+}

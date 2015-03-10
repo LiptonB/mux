@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"math"
 	"os"
 	"sync"
 
@@ -23,7 +24,7 @@ func ReadRecords(r io.ReadCloser, out []chan *mux.Record) {
 		} else if err != nil {
 			panic(err)
 		}
-		out[rec.Index] <- rec
+		out[*rec.Index] <- rec
 	}
 
 	for _, c := range out {
@@ -45,7 +46,7 @@ func main() {
 		log.Printf("Usage: demux <file1> <file2>...")
 		return
 	}
-	if flag.NArg() > 255 {
+	if flag.NArg() > math.MaxUint32 {
 		log.Printf("Too many files")
 		return
 	}
